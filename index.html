@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ballistic AI — Automated Model Builder</title>
+<title>Ballistic AI → Automated Model Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -232,7 +232,7 @@
     <div class="sub">Load a dataset. Ballistic AI reads every column and works out what it's looking at.</div>
     <div class="dropzone" id="dropzone">
       <strong>Drop a CSV here</strong> or click to browse<br>
-      <span style="font-size:12px;">any table — sales, sports stats, survey data, sensor logs...</span>
+      <span style="font-size:12px;">any table; sales, sports stats, survey data, sensor logs...</span>
       <input type="file" id="fileInput" accept=".csv" />
     </div>
     <div id="intake-summary" class="hidden">
@@ -255,7 +255,7 @@
   <!-- STAGE 2: CALIBRATE -->
   <section class="panel" id="panel-calibrate">
     <h2>02 — Calibrate</h2>
-    <div class="sub">Cleaning pass: duplicates, missing values, dead columns, inconsistent category spellings, and outliers all get handled here — before any model sees the data.</div>
+    <div class="sub">Cleaning pass: duplicates, missing values, dead columns, inconsistent category spellings, and outliers all get handled here before any model sees the data.</div>
     <div class="checkrow" style="margin-bottom:14px;">
       <input type="checkbox" id="chk-cap-outliers">
       <label for="chk-cap-outliers">Cap extreme outliers to the IQR bound (winsorize) instead of leaving them as-is</label>
@@ -269,7 +269,7 @@
 
   <!-- STAGE 3: TRAIN -->
   <section class="panel" id="panel-train">
-    <h2>03 — Train</h2>
+    <h2>Train</h2>
     <div class="sub">Pick a target, explore the data to see what's actually going on, then build and evaluate a model.</div>
 
     <label class="field-label">Target column (what to predict)</label>
@@ -285,7 +285,7 @@
     <div id="eda-section" class="hidden" style="margin-top:22px;">
       <div class="divider"></div>
       <h3 style="font-size:14px;margin-bottom:6px;">Exploratory Data Analysis</h3>
-      <div class="small-note" style="margin-bottom:14px;">A look at your data before modeling — use this to sanity-check which features are actually worth including below.</div>
+      <div class="small-note" style="margin-bottom:14px;">A look at your data before modeling, use this to sanity-check which features are actually worth including below.</div>
 
       <div id="eda-stats-wrap" style="margin-bottom:18px;"></div>
 
@@ -334,7 +334,7 @@
 
   <!-- STAGE 4: IMPACT -->
   <section class="panel" id="panel-impact">
-    <h2>04 — Impact</h2>
+    <h2>Impact</h2>
     <div class="sub">Results, live prediction, and what the model actually leaned on.</div>
 
     <div class="metric-cards" id="metric-cards"></div>
@@ -386,7 +386,7 @@
   </section>
 
   <div class="footer-note">
-    BALLISTIC AI — runs fully in your browser. Nothing you upload leaves this page.<br>
+    BALLISTIC AI runs fully in your browser. Nothing you upload leaves this page.<br>
     Built for quick, no-code model prototyping. Validate anything high-stakes with a proper statistical review.
   </div>
 
@@ -738,11 +738,11 @@ function runCalibration(){
   state.headers.forEach(h=>{
     const c = state.columns[h];
     if (c.isConstant){
-      log.push({type:'warn', text:`Dropped "<b>${h}</b>" — every value is identical, no signal to learn from.`});
+      log.push({type:'warn', text:`Dropped "<b>${h}</b>" every value is identical, no signal to learn from.`});
       return;
     }
     if (c.missingFrac > 0.5){
-      log.push({type:'warn', text:`Dropped "<b>${h}</b>" — ${(c.missingFrac*100).toFixed(0)}% missing, too sparse to impute reliably.`});
+      log.push({type:'warn', text:`Dropped "<b>${h}</b>" ${(c.missingFrac*100).toFixed(0)}% missing, too sparse to impute reliably.`});
       return;
     }
     keepCols.push(h);
@@ -752,7 +752,7 @@ function runCalibration(){
       const {map, mergedAny} = buildCategoryCanonicalMap(rawVals);
       if (mergedAny){
         cleaned.forEach(r=>{ if(!isMissing(r[h])) r[h] = map[r[h]] ?? r[h]; });
-        log.push({type:'ok', text:`Normalized "<b>${h}</b>" — merged category spellings that only differed by case or spacing.`});
+        log.push({type:'ok', text:`Normalized "<b>${h}</b>", merged category spellings that only differed by case or spacing.`});
       }
     }
 
@@ -787,7 +787,7 @@ function runCalibration(){
         });
         log.push({type:'ok', text:`Capped ${cappedCount} extreme value(s) in "<b>${h}</b>" to the IQR bound [${lower.toFixed(2)}, ${upper.toFixed(2)}].`});
       } else {
-        log.push({type:'warn', text:`"<b>${h}</b>" has ${c.outliers.count} value(s) outside the normal IQR range — left as-is. Tick "cap extreme outliers" above and re-run if you want these pulled in.`});
+        log.push({type:'warn', text:`"<b>${h}</b>" has ${c.outliers.count} value(s) outside the normal IQR range, left as-is. Tick "cap extreme outliers" above and re-run if you want these pulled in.`});
       }
     }
   });
@@ -870,7 +870,7 @@ function updateTaskNote(auto){
   const imbalanceNote = document.getElementById('imbalance-note');
   imbalanceNote.textContent = '';
   if (state.taskType === 'timeseries'){
-    note.textContent = `Ballistic AI will build lag features from "${state.target}" (using row order) and forecast forward — other columns are ignored in this mode.`;
+    note.textContent = `Ballistic AI will build lag features from "${state.target}" (using row order) and forecast forward, other columns are ignored in this mode.`;
     wrap.classList.add('hidden');
   } else {
     note.textContent = state.taskType === auto
@@ -895,7 +895,7 @@ function checkClassImbalance(){
   const {topLabel, topFrac, numClasses} = getMajorityClass();
   const note = document.getElementById('imbalance-note');
   if (topFrac > 0.8 && numClasses > 1){
-    note.textContent = `⚠ Class imbalance: "${topLabel}" makes up ${(topFrac*100).toFixed(0)}% of rows. A model that always guesses "${topLabel}" would already score ${(topFrac*100).toFixed(0)}% accuracy without learning anything — treat the accuracy metric on the Impact page with that in mind.`;
+    note.textContent = `⚠ Class imbalance: "${topLabel}" makes up ${(topFrac*100).toFixed(0)}% of rows. A model that always guesses "${topLabel}" would already score ${(topFrac*100).toFixed(0)}% accuracy without learning anything, treat the accuracy metric on the Impact page with that in mind.`;
   } else {
     note.textContent = '';
   }
@@ -909,8 +909,8 @@ function renderFeaturePicker(){
     const col = state.columns[h];
     const excludeByDefault = col.isIdLike || col.highCardinality;
     let note = '';
-    if (col.isIdLike) note = ' <span style="color:var(--text-dim);font-size:11px;">(identifier — unchecked by default)</span>';
-    else if (col.highCardinality) note = ' <span style="color:var(--text-dim);font-size:11px;">(high-cardinality — unchecked by default)</span>';
+    if (col.isIdLike) note = ' <span style="color:var(--text-dim);font-size:11px;">(identifier, unchecked by default)</span>';
+    else if (col.highCardinality) note = ' <span style="color:var(--text-dim);font-size:11px;">(high-cardinality, unchecked by default)</span>';
     return `<div class="checkrow">
       <input type="checkbox" value="${h}" ${excludeByDefault?'':'checked'} id="feat-${h}">
       <label for="feat-${h}">${h} <span class="tag ${col.type}" style="margin-left:6px;">${col.type}</span>${note}</label>
@@ -1429,14 +1429,14 @@ function r2Descriptor(r2){
   if (r2 >= 0.9) return {label:'excellent', text:'the model captures almost all of the pattern in your data'};
   if (r2 >= 0.7) return {label:'strong', text:'the model has a solid handle on what drives changes in this number'};
   if (r2 >= 0.5) return {label:'moderate', text:'the model has found a real pattern, but a fair amount of the variation is still unexplained'};
-  if (r2 >= 0.2) return {label:'weak', text:"the model's connection to the target is loose — treat its predictions as rough estimates, not firm numbers"};
-  return {label:'very weak', text:"the model isn't finding a meaningful pattern with the columns you gave it — more data, different features, or a different target might help"};
+  if (r2 >= 0.2) return {label:'weak', text:"the model's connection to the target is loose, treat its predictions as rough estimates, not firm numbers"};
+  return {label:'very weak', text:"the model isn't finding a meaningful pattern with the columns you gave it, more data, different features, or a different target might help"};
 }
 
 function confidenceDescriptor(frac){
   if (frac >= 0.85) return 'high confidence';
   if (frac >= 0.6) return 'moderate confidence';
-  return "low confidence — the model isn't very sure here, so treat it as a guess";
+  return "low confidence, the model isn't very sure here, so treat it as a guess";
 }
 
 function findMostConfusedPair(cm, cats){
@@ -1467,11 +1467,11 @@ function generateExplanation(){
     const accPct = (m.accuracy*100).toFixed(0);
     let compareLine;
     if (m.accuracy > topFrac + 0.05){
-      compareLine = `That's meaningfully better than just always guessing the most common category (which would get it right about ${baselinePct}% of the time) — so it has genuinely learned something from the data.`;
+      compareLine = `That's meaningfully better than just always guessing the most common category (which would get it right about ${baselinePct}% of the time), so it has genuinely learned something from the data.`;
     } else if (m.accuracy > topFrac - 0.03){
-      compareLine = `That's about the same as always guessing the most common category (${baselinePct}%) — so treat this model with caution; it may not be picking up a real pattern yet.`;
+      compareLine = `That's about the same as always guessing the most common category (${baselinePct}%), so treat this model with caution; it may not be picking up a real pattern yet.`;
     } else {
-      compareLine = `That's actually worse than simply guessing the most common category every time (${baselinePct}%) — something is likely off with the features chosen or the amount of data available.`;
+      compareLine = `That's actually worse than simply guessing the most common category every time (${baselinePct}%), something is likely off with the features chosen or the amount of data available.`;
     }
     let confusionLine = '';
     const pair = findMostConfusedPair(m.cm, m.cats);
@@ -1503,7 +1503,7 @@ function generateExplanation(){
       else if (pct > 0) trendLine = ` Looking ahead, the forecast expects "${state.target}" to trend upward by roughly ${pct.toFixed(0)}% over the forecast window.`;
       else trendLine = ` Looking ahead, the forecast expects "${state.target}" to trend downward by roughly ${Math.abs(pct).toFixed(0)}% over the forecast window.`;
     }
-    html = `<p>This forecasting model's fit on past data is <b>${desc.label}</b> — ${desc.text}, based on the last ${state.lagCount} values each time. Typical predictions are off by about <b>${m.rmse.toFixed(2)}</b>.${trendLine}</p>`;
+    html = `<p>This forecasting model's fit on past data is <b>${desc.label}</b> ${desc.text}, based on the last ${state.lagCount} values each time. Typical predictions are off by about <b>${m.rmse.toFixed(2)}</b>.${trendLine}</p>`;
   }
 
   el.innerHTML = html;
@@ -1567,12 +1567,12 @@ document.getElementById('btn-predict').addEventListener('click', ()=>{
     const cats = state.targetEncoder.categories;
     const idx = out.indexOf(Math.max(...out));
     display = `${cats[idx]}  <span style="font-size:14px;color:var(--text-dim);">(${(out[idx]*100).toFixed(1)}% confidence)</span>`;
-    note = `That's ${confidenceDescriptor(out[idx])} — this model is right about ${(state.metrics.accuracy*100).toFixed(0)}% of the time overall, so weigh this prediction against that baseline.`;
+    note = `That's ${confidenceDescriptor(out[idx])}, this model is right about ${(state.metrics.accuracy*100).toFixed(0)}% of the time overall, so weigh this prediction against that baseline.`;
   } else {
     const {min,max} = state.targetEncoder;
     display = (out[0]*(max-min)+min).toFixed(3);
     const desc = r2Descriptor(state.metrics.r2);
-    note = `Typical predictions from this model are off by about ${state.metrics.rmse.toFixed(2)} (fit quality: ${desc.label}) — treat this as an estimate, not an exact figure.`;
+    note = `Typical predictions from this model are off by about ${state.metrics.rmse.toFixed(2)} (fit quality: ${desc.label}), treat this as an estimate, not an exact figure.`;
   }
   document.getElementById('readout').classList.remove('hidden');
   document.getElementById('readout-val').innerHTML = display;
@@ -1627,7 +1627,7 @@ document.getElementById('btn-download-charts').addEventListener('click', ()=>{
 
 document.getElementById('btn-download-report').addEventListener('click', ()=>{
   if (!state.model){
-    alert('Train a model first — there\'s nothing to report on yet.');
+    alert('Train a model first, there\'s nothing to report on yet.');
     return;
   }
   const { jsPDF } = window.jspdf;
@@ -1665,7 +1665,7 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
 
   // Title
   doc.setFont('helvetica','bold'); doc.setFontSize(19); doc.setTextColor(20,20,20);
-  doc.text('BALLISTIC AI — Prediction Report', marginX, y);
+  doc.text('BALLISTIC AI Prediction Report', marginX, y);
   y += 6;
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(130,130,130);
   doc.text(`Generated ${new Date().toLocaleString()}`, marginX, y);
@@ -1742,7 +1742,7 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
 
   ensureSpace(14);
   doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(140,140,140);
-  doc.text('Built with Ballistic AI — a no-code prototyping tool. Validate anything high-stakes with a proper statistical review.', marginX, pageHeight-12);
+  doc.text('Built with Ballistic AI, a no-code prototyping tool. Validate anything high-stakes with a proper statistical review.', marginX, pageHeight-12);
 
   const stamp = new Date().toISOString().slice(0,10);
   doc.save(`ballistic-ai-report-${state.target}-${stamp}.pdf`);
