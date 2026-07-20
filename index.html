@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ballistic AI → Automated Model Builder</title>
+<title>Ballistic AI — Automated Model Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -38,7 +38,6 @@
   .mono{font-family:'IBM Plex Mono',monospace;}
   a{color:var(--brass);}
 
-  /* HEADER + TRAJECTORY TRACKER */
   header{
     padding:28px 32px 20px;
     border-bottom:1px solid var(--border);
@@ -78,7 +77,6 @@
   .panel .sub{color:var(--text-dim);font-size:13px;margin-bottom:20px;}
 
   .dropzone{
-    display:block;
     border:1px dashed var(--border);
     border-radius:6px;
     padding:40px 20px;
@@ -192,6 +190,7 @@
   .divider{height:1px;background:var(--border);margin:20px 0;}
   .flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
   .small-note{font-size:11.5px;color:var(--text-dim);margin-top:8px;}
+
 </style>
 </head>
 <body>
@@ -229,13 +228,13 @@
 
   <!-- STAGE 1: INTAKE -->
   <section class="panel active" id="panel-intake">
-    <h2>Intake</h2>
+    <h2>01 — Intake</h2>
     <div class="sub">Load a dataset. Ballistic AI reads every column and works out what it's looking at.</div>
-    <label class="dropzone" id="dropzone" for="fileInput">
+    <div class="dropzone" id="dropzone">
       <strong>Drop a CSV here</strong> or click to browse<br>
-      <span style="font-size:12px;">any table; sales, sports stats, survey data, sensor logs...</span>
-    </label>
-    <input type="file" id="fileInput" accept=".csv" style="display:none;" />
+      <span style="font-size:12px;">any table — sales, sports stats, survey data, sensor logs...</span>
+      <input type="file" id="fileInput" accept=".csv" />
+    </div>
     <div id="intake-summary" class="hidden">
       <div class="divider"></div>
       <div class="flex-between">
@@ -255,8 +254,8 @@
 
   <!-- STAGE 2: CALIBRATE -->
   <section class="panel" id="panel-calibrate">
-    <h2>Calibrate</h2>
-    <div class="sub">Cleaning pass: duplicates, missing values, dead columns, inconsistent category spellings, and outliers all get handled here before any model sees the data.</div>
+    <h2>02 — Calibrate</h2>
+    <div class="sub">Cleaning pass: duplicates, missing values, dead columns, inconsistent category spellings, and outliers all get handled here — before any model sees the data.</div>
     <div class="checkrow" style="margin-bottom:14px;">
       <input type="checkbox" id="chk-cap-outliers">
       <label for="chk-cap-outliers">Cap extreme outliers to the IQR bound (winsorize) instead of leaving them as-is</label>
@@ -270,8 +269,8 @@
 
   <!-- STAGE 3: TRAIN -->
   <section class="panel" id="panel-train">
-    <h2>Train</h2>
-    <div class="sub">Pick a target. Ballistic AI infers the task, builds a network, and fires the training run.</div>
+    <h2>03 — Train</h2>
+    <div class="sub">Pick a target, explore the data to see what's actually going on, then build and evaluate a model.</div>
 
     <label class="field-label">Target column (what to predict)</label>
     <select id="select-target"></select>
@@ -282,6 +281,25 @@
     <div class="radiogroup" id="task-radiogroup"></div>
     <div class="small-note" id="task-note"></div>
     <div class="small-note" id="imbalance-note" style="color:var(--brass);"></div>
+
+    <div id="eda-section" class="hidden" style="margin-top:22px;">
+      <div class="divider"></div>
+      <h3 style="font-size:14px;margin-bottom:6px;">Exploratory Data Analysis</h3>
+      <div class="small-note" style="margin-bottom:14px;">A look at your data before modeling — use this to sanity-check which features are actually worth including below.</div>
+
+      <div id="eda-stats-wrap" style="margin-bottom:18px;"></div>
+
+      <div class="grid2">
+        <div class="chart-box">
+          <div class="small-note" style="margin-bottom:8px;">Target distribution: <span id="eda-target-label" class="mono"></span></div>
+          <canvas id="edaTargetChart" height="140"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="small-note" style="margin-bottom:8px;" id="eda-secondary-label"></div>
+          <div id="eda-secondary-content"></div>
+        </div>
+      </div>
+    </div>
 
     <div id="feature-picker-wrap" style="margin-top:18px;">
       <label class="field-label">Feature columns to use</label>
@@ -316,10 +334,15 @@
 
   <!-- STAGE 4: IMPACT -->
   <section class="panel" id="panel-impact">
-    <h2>Impact</h2>
+    <h2>04 — Impact</h2>
     <div class="sub">Results, live prediction, and what the model actually leaned on.</div>
 
     <div class="metric-cards" id="metric-cards"></div>
+
+    <div class="chart-box" id="explainer-box" style="border-color:var(--brass-dim);">
+      <div style="font-size:11px;letter-spacing:0.06em;color:var(--brass);text-transform:uppercase;margin-bottom:10px;">In plain terms</div>
+      <div id="plain-explainer" style="font-size:14px;line-height:1.65;color:var(--text);"></div>
+    </div>
 
     <div class="chart-box"><canvas id="resultChart" height="120"></canvas></div>
 
@@ -347,13 +370,14 @@
         <svg class="crosshair" width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="12" fill="none" stroke="#C08552" stroke-width="1.3"/><circle cx="17" cy="17" r="4" fill="none" stroke="#C08552" stroke-width="1.3"/><line x1="17" y1="0" x2="17" y2="8" stroke="#C08552" stroke-width="1.3"/><line x1="17" y1="26" x2="17" y2="34" stroke="#C08552" stroke-width="1.3"/><line x1="0" y1="17" x2="8" y2="17" stroke="#C08552" stroke-width="1.3"/><line x1="26" y1="17" x2="34" y2="17" stroke="#C08552" stroke-width="1.3"/></svg>
         <div class="rlabel">Predicted output</div>
         <div class="rval" id="readout-val">—</div>
+        <div class="small-note" id="readout-note" style="margin-top:8px;"></div>
       </div>
     </div>
 
     <div class="divider"></div>
     <div class="flex-between">
       <button class="btn secondary" id="btn-download-report">Download report (PDF)</button>
-      <button class="btn secondary" id="btn-download-charts">Download charts (PNG)</button>
+      <button class="btn secondary" id="btn-download-charts">Download charts (JPG)</button>
     </div>
 
     <div style="margin-top:26px;text-align:right;">
@@ -362,7 +386,7 @@
   </section>
 
   <div class="footer-note">
-    BALLISTIC AI runs fully in your browser. Nothing you upload leaves this page.<br>
+    BALLISTIC AI — runs fully in your browser. Nothing you upload leaves this page.<br>
     Built for quick, no-code model prototyping. Validate anything high-stakes with a proper statistical review.
   </div>
 
@@ -375,10 +399,6 @@
    ========================================================================= */
 
 const STAGES = ['intake','calibrate','train','impact'];
-
-// Shown as a clickable link at the bottom of the downloaded PDF report.
-// Update this if your Ballistic AI deployment URL changes.
-const SOURCE_URL = 'https://ballistic-02.github.io/Ballistic.ai/';
 let currentStage = 'intake';
 
 const state = {
@@ -402,6 +422,8 @@ const state = {
   lossChart: null,
   resultChart: null,
   importanceChart: null,
+  edaTargetChart: null,
+  edaCorrelationChart: null,
   lastForecast: null
 };
 
@@ -419,11 +441,6 @@ function looksLikeDate(v){
   return !Number.isNaN(t);
 }
 
-// Strips currency symbols (₦, $, £, €), thousands separators, and trailing
-// percent signs before testing/parsing as a number. Guards against false
-// positives (e.g. phone numbers, reference codes) by requiring the cleaned
-// string to be a plain signed decimal — anything with letters, slashes, or
-// internal dashes left after stripping is rejected as non-numeric.
 function parseLooseNumber(v){
   if (typeof v === 'number') return v;
   if (typeof v !== 'string') return NaN;
@@ -470,8 +487,35 @@ function stddev(arr){
   return Math.sqrt(mean(arr.map(v=>(v-m)*(v-m))));
 }
 
-// IQR-based outlier detection: flags values beyond 1.5x the interquartile
-// range past Q1/Q3, the standard robust-statistics convention.
+function computeHistogram(nums, binCount){
+  binCount = binCount || 10;
+  const {min, max} = minMax(nums);
+  if (max === min) return {labels:[min.toFixed(1)], counts:[nums.length]};
+  const binSize = (max-min)/binCount;
+  const counts = new Array(binCount).fill(0);
+  nums.forEach(v=>{
+    let idx = Math.floor((v-min)/binSize);
+    if (idx >= binCount) idx = binCount-1;
+    if (idx < 0) idx = 0;
+    counts[idx]++;
+  });
+  const labels = counts.map((_,i)=> (min+i*binSize).toFixed(1));
+  return {labels, counts};
+}
+
+function pearsonCorrelation(xs, ys){
+  const n = xs.length;
+  if (n < 2) return 0;
+  const mx = mean(xs), my = mean(ys);
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i=0;i<n;i++){
+    const dx = xs[i]-mx, dy = ys[i]-my;
+    num += dx*dy; dx2 += dx*dx; dy2 += dy*dy;
+  }
+  const denom = Math.sqrt(dx2*dy2);
+  return denom === 0 ? 0 : num/denom;
+}
+
 function computeOutliers(nums){
   if (nums.length < 4) return {count:0, lower:-Infinity, upper:Infinity, q1:null, q3:null};
   const sorted = nums.slice().sort((a,b)=>a-b);
@@ -487,9 +531,6 @@ function computeOutliers(nums){
   return {count, lower, upper, q1, q3};
 }
 
-// Groups categorical values that only differ by case or surrounding
-// whitespace (e.g. "Lagos" / "lagos " / "LAGOS") into one canonical label —
-// the most frequent original spelling wins.
 function buildCategoryCanonicalMap(values){
   const groups = {};
   values.forEach(v=>{
@@ -510,9 +551,6 @@ function buildCategoryCanonicalMap(values){
   return {map, mergedAny};
 }
 
-// Exact-duplicate row removal, run once at load time (before any modeling
-// decisions are made) — two rows identical across every column are almost
-// never meant to both count.
 function dedupeRows(rows, headers){
   const seen = new Set();
   const out = [];
@@ -530,10 +568,6 @@ function normalizeCell(v){
   return typeof v === 'string' ? v.trim().replace(/\s+/g,' ') : v;
 }
 
-// Math.min(...largeArray) / Math.max(...largeArray) throws a silent stack
-// overflow once an array gets into the tens of thousands of elements — a
-// real risk with retail/transaction-scale CSVs. This loop-based version has
-// no such limit.
 function minMax(arr){
   let min = Infinity, max = -Infinity;
   for (let i=0;i<arr.length;i++){
@@ -566,9 +600,7 @@ function goToStage(stage){
     el.classList.toggle('done', i<idx);
   });
   const pct = idx / (STAGES.length-1);
-  const pathLen = 900; // approximation, path is visually ~900 long incl curve
   document.getElementById('traj-progress').setAttribute('stroke-dasharray', (pct*1000)+' 2000');
-  // move marker along a simple quadratic bezier approx
   const t = pct;
   const x0=40,y0=55,cx=450,cy=-10,x1=860,y1=55;
   const mx = (1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1;
@@ -594,11 +626,7 @@ document.querySelectorAll('.stage-label').forEach(el=>{
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 
-// Note: no JS-triggered click() here — the <label for="fileInput"> in the
-// HTML handles "click to browse" natively. Some browser extensions (ad
-// blockers, privacy tools) silently block the common "hidden input +
-// programmatic .click()" pattern; a native label association can't be
-// blocked that way since it's standard form behavior.
+dropzone.addEventListener('click', ()=>fileInput.click());
 dropzone.addEventListener('dragover', e=>{e.preventDefault();dropzone.classList.add('drag');});
 dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
 dropzone.addEventListener('drop', e=>{
@@ -662,7 +690,6 @@ function renderIntake(){
     `${state.rawRows.length} rows  ·  ${state.headers.length} columns` +
     (state.duplicatesRemoved ? `  ·  ${state.duplicatesRemoved} exact duplicate row(s) removed on load` : '');
 
-  // preview table (first 8 rows)
   const table = document.getElementById('preview-table');
   let html = '<thead><tr>' + state.headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
   state.rawRows.slice(0,8).forEach(r=>{
@@ -671,7 +698,6 @@ function renderIntake(){
   html += '</tbody>';
   table.innerHTML = html;
 
-  // column profile
   const wrap = document.getElementById('column-profile');
   wrap.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">COLUMN PROFILE</div>' +
     state.headers.map(h=>{
@@ -712,23 +738,21 @@ function runCalibration(){
   state.headers.forEach(h=>{
     const c = state.columns[h];
     if (c.isConstant){
-      log.push({type:'warn', text:`Dropped "<b>${h}</b>" every value is identical, no signal to learn from.`});
+      log.push({type:'warn', text:`Dropped "<b>${h}</b>" — every value is identical, no signal to learn from.`});
       return;
     }
     if (c.missingFrac > 0.5){
-      log.push({type:'warn', text:`Dropped "<b>${h}</b>" ${(c.missingFrac*100).toFixed(0)}% missing, too sparse to impute reliably.`});
+      log.push({type:'warn', text:`Dropped "<b>${h}</b>" — ${(c.missingFrac*100).toFixed(0)}% missing, too sparse to impute reliably.`});
       return;
     }
     keepCols.push(h);
 
     if (c.type === 'categorical'){
-      // Merge spelling/case/whitespace variants of the same category first,
-      // so imputation and encoding downstream see one consistent label set.
       const rawVals = state.rawRows.map(r=>r[h]);
       const {map, mergedAny} = buildCategoryCanonicalMap(rawVals);
       if (mergedAny){
         cleaned.forEach(r=>{ if(!isMissing(r[h])) r[h] = map[r[h]] ?? r[h]; });
-        log.push({type:'ok', text:`Normalized "<b>${h}</b>" merged category spellings that only differed by case or spacing.`});
+        log.push({type:'ok', text:`Normalized "<b>${h}</b>" — merged category spellings that only differed by case or spacing.`});
       }
     }
 
@@ -748,7 +772,7 @@ function runCalibration(){
         log.push({type:'ok', text:`Filled ${c.missing} missing value(s) in "<b>${h}</b>" with the most common value ("${md}").`});
       }
     } else {
-      log.push({type:'ok', text:`"<b>${h}</b>" clean, no missing values.`});
+      log.push({type:'ok', text:`"<b>${h}</b>" — clean, no missing values.`});
     }
 
     if (c.type === 'numeric' && c.outliers && c.outliers.count > 0){
@@ -763,15 +787,8 @@ function runCalibration(){
         });
         log.push({type:'ok', text:`Capped ${cappedCount} extreme value(s) in "<b>${h}</b>" to the IQR bound [${lower.toFixed(2)}, ${upper.toFixed(2)}].`});
       } else {
-        log.push({type:'warn', text:`"<b>${h}</b>" has ${c.outliers.count} value(s) outside the normal IQR range, left as-is. Tick "cap extreme outliers" above and re-run if you want these pulled in.`});
+        log.push({type:'warn', text:`"<b>${h}</b>" has ${c.outliers.count} value(s) outside the normal IQR range — left as-is. Tick "cap extreme outliers" above and re-run if you want these pulled in.`});
       }
-    }
-
-    if (c.highCardinality){
-      log.push({type:'', text:`"<b>${h}</b>" has ${c.unique} distinct categories — high-cardinality, likely to add noise rather than signal. Unchecked in feature selection by default.`});
-    }
-    if (c.isIdLike){
-      log.push({type:'', text:`"<b>${h}</b>" looks like an identifier (all unique values), excluded from features by default.`});
     }
   });
 
@@ -779,9 +796,6 @@ function runCalibration(){
   state.keepCols = keepCols;
   state.cleaningLog = log;
 
-  // Re-parse numeric columns after any imputation/capping so downstream
-  // stats (used for the encoder and the feature-picker defaults) reflect
-  // the calibrated data, not the raw upload.
   keepCols.forEach(h=>{
     if (state.columns[h].type === 'numeric'){
       const nums = cleaned.map(r=>parseLooseNumber(r[h])).filter(v=>!Number.isNaN(v));
@@ -842,10 +856,12 @@ function onTargetChange(){
       p.classList.add('selected');
       updateTaskNote(auto);
       renderFeaturePicker();
+      renderEDA();
     });
   });
   updateTaskNote(auto);
   renderFeaturePicker();
+  renderEDA();
 }
 
 function updateTaskNote(auto){
@@ -854,7 +870,7 @@ function updateTaskNote(auto){
   const imbalanceNote = document.getElementById('imbalance-note');
   imbalanceNote.textContent = '';
   if (state.taskType === 'timeseries'){
-    note.textContent = `Ballistic AI will build lag features from "${state.target}" (using row order) and forecast forward, other columns are ignored in this mode.`;
+    note.textContent = `Ballistic AI will build lag features from "${state.target}" (using row order) and forecast forward — other columns are ignored in this mode.`;
     wrap.classList.add('hidden');
   } else {
     note.textContent = state.taskType === auto
@@ -865,8 +881,6 @@ function updateTaskNote(auto){
   }
 }
 
-// Warns when one class dominates the target column — a model can look
-// "accurate" while just always predicting the majority class.
 function getMajorityClass(){
   const vals = state.cleanedRows.map(r=>String(r[state.target]));
   const counts = {};
@@ -881,7 +895,7 @@ function checkClassImbalance(){
   const {topLabel, topFrac, numClasses} = getMajorityClass();
   const note = document.getElementById('imbalance-note');
   if (topFrac > 0.8 && numClasses > 1){
-    note.textContent = `⚠ Class imbalance: "${topLabel}" makes up ${(topFrac*100).toFixed(0)}% of rows. A model that always guesses "${topLabel}" would already score ${(topFrac*100).toFixed(0)}% accuracy without learning anything, treat the accuracy metric on the Impact page with that in mind.`;
+    note.textContent = `⚠ Class imbalance: "${topLabel}" makes up ${(topFrac*100).toFixed(0)}% of rows. A model that always guesses "${topLabel}" would already score ${(topFrac*100).toFixed(0)}% accuracy without learning anything — treat the accuracy metric on the Impact page with that in mind.`;
   } else {
     note.textContent = '';
   }
@@ -902,6 +916,115 @@ function renderFeaturePicker(){
       <label for="feat-${h}">${h} <span class="tag ${col.type}" style="margin-left:6px;">${col.type}</span>${note}</label>
     </div>`;
   }).join('');
+}
+
+// Exploratory Data Analysis — runs the moment a target is picked, before any
+// model is trained. Summary stats + target distribution always show; the
+// second panel adapts to the task: correlation-with-target for a numeric
+// target, or per-class averages for a categorical one.
+function renderEDA(){
+  const section = document.getElementById('eda-section');
+  if (!state.target || !state.cleanedRows.length){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  const rows = state.cleanedRows;
+  const numericCols = state.keepCols.filter(h=> state.columns[h].type === 'numeric');
+
+  // Summary statistics table
+  const statsWrap = document.getElementById('eda-stats-wrap');
+  if (numericCols.length){
+    let html = '<div class="table-scroll"><table><thead><tr><th>column</th><th>mean</th><th>median</th><th>std dev</th><th>min</th><th>max</th></tr></thead><tbody>';
+    numericCols.forEach(h=>{
+      const vals = rows.map(r=>parseLooseNumber(r[h])).filter(v=>!Number.isNaN(v));
+      if (!vals.length) return;
+      const {min, max} = minMax(vals);
+      html += `<tr><td><b>${h}</b></td><td>${mean(vals).toFixed(2)}</td><td>${median(vals).toFixed(2)}</td><td>${stddev(vals).toFixed(2)}</td><td>${min.toFixed(2)}</td><td>${max.toFixed(2)}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+    statsWrap.innerHTML = html;
+  } else {
+    statsWrap.innerHTML = '<div class="small-note">No numeric columns to summarize.</div>';
+  }
+
+  // Target distribution
+  document.getElementById('eda-target-label').textContent = state.target;
+  const targetType = state.columns[state.target].type;
+  const ctx1 = document.getElementById('edaTargetChart').getContext('2d');
+  if (state.edaTargetChart) state.edaTargetChart.destroy();
+  if (targetType === 'numeric'){
+    const vals = rows.map(r=>parseLooseNumber(r[state.target])).filter(v=>!Number.isNaN(v));
+    const {labels, counts} = computeHistogram(vals, 10);
+    state.edaTargetChart = new Chart(ctx1, {
+      type:'bar',
+      data:{labels, datasets:[{data:counts, backgroundColor:'#5B7C99'}]},
+      options:{responsive:true,
+        scales:{x:{ticks:{color:'#8B93A0',maxTicksLimit:6},grid:{display:false}}, y:{ticks:{color:'#8B93A0'},grid:{color:'#2E333C'}}},
+        plugins:{legend:{display:false}}
+      }
+    });
+  } else {
+    const vals = rows.map(r=>String(r[state.target]));
+    const cats = Array.from(new Set(vals));
+    const counts = cats.map(c=> vals.filter(v=>v===c).length);
+    state.edaTargetChart = new Chart(ctx1, {
+      type:'bar',
+      data:{labels:cats, datasets:[{data:counts, backgroundColor:'#5B7C99'}]},
+      options:{responsive:true,
+        scales:{x:{ticks:{color:'#8B93A0'},grid:{display:false}}, y:{ticks:{color:'#8B93A0'},grid:{color:'#2E333C'}}},
+        plugins:{legend:{display:false}}
+      }
+    });
+  }
+
+  // Secondary panel: correlation (numeric target) or per-class averages (categorical target)
+  const secLabel = document.getElementById('eda-secondary-label');
+  const secContent = document.getElementById('eda-secondary-content');
+  if (state.edaCorrelationChart){ state.edaCorrelationChart.destroy(); state.edaCorrelationChart = null; }
+
+  if (targetType === 'numeric'){
+    secLabel.textContent = 'Correlation with target (-1 to 1)';
+    secContent.innerHTML = '<canvas id="edaCorrelationChart" height="140"></canvas>';
+    const featureCandidates = numericCols.filter(h=>h!==state.target);
+    const correlations = featureCandidates.map(h=>{
+      const pairs = rows.map(r=>[parseLooseNumber(r[h]), parseLooseNumber(r[state.target])])
+        .filter(([a,b])=>!Number.isNaN(a) && !Number.isNaN(b));
+      const corr = pairs.length > 1 ? pearsonCorrelation(pairs.map(p=>p[0]), pairs.map(p=>p[1])) : 0;
+      return {name:h, corr};
+    }).sort((a,b)=> Math.abs(b.corr)-Math.abs(a.corr));
+
+    if (correlations.length){
+      const ctx2 = document.getElementById('edaCorrelationChart').getContext('2d');
+      state.edaCorrelationChart = new Chart(ctx2, {
+        type:'bar',
+        data:{labels:correlations.map(c=>c.name), datasets:[{data:correlations.map(c=>c.corr), backgroundColor:'#C08552'}]},
+        options:{indexAxis:'y', responsive:true,
+          scales:{x:{min:-1,max:1,ticks:{color:'#8B93A0'},grid:{color:'#2E333C'}}, y:{ticks:{color:'#8B93A0'},grid:{display:false}}},
+          plugins:{legend:{display:false}}
+        }
+      });
+    } else {
+      secContent.innerHTML = '<div class="small-note">No other numeric columns to correlate against.</div>';
+    }
+  } else {
+    secLabel.textContent = 'Average of each numeric column, by class';
+    const cats = Array.from(new Set(rows.map(r=>String(r[state.target]))));
+    const featureCandidates = numericCols.filter(h=>h!==state.target);
+    if (featureCandidates.length){
+      let html = '<div class="table-scroll"><table><thead><tr><th>class</th>' +
+        featureCandidates.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+      cats.forEach(cls=>{
+        const subset = rows.filter(r=> String(r[state.target])===cls);
+        html += `<tr><th>${cls}</th>` + featureCandidates.map(h=>{
+          const vals = subset.map(r=>parseLooseNumber(r[h])).filter(v=>!Number.isNaN(v));
+          return `<td>${vals.length ? mean(vals).toFixed(2) : '—'}</td>`;
+        }).join('') + '</tr>';
+      });
+      html += '</tbody></table></div>';
+      secContent.innerHTML = html;
+    } else {
+      secContent.innerHTML = '<div class="small-note">No numeric columns to break down by class.</div>';
+    }
+  }
 }
 
 document.getElementById('epochs-slider').addEventListener('input', e=>{
@@ -937,7 +1060,7 @@ function encodeFeatureRow(row, featureCols, encoders){
   return featureCols.map(h=>encoders[h].encode(row[h]));
 }
 
-/* ---- training: classification / regression ---- */
+/* ---- training ---- */
 
 async function launchTraining(){
   const epochs = parseInt(document.getElementById('epochs-slider').value);
@@ -1137,6 +1260,7 @@ document.getElementById('btn-to-impact').addEventListener('click', ()=>{
   if (state.taskType !== 'timeseries') renderImpactTabular();
   renderImportance();
   renderPredictForm();
+  generateExplanation();
 });
 
 /* ============================ STAGE 4: IMPACT ============================ */
@@ -1206,6 +1330,7 @@ function renderImpactTimeSeries(){
   `;
   renderForecastChart([]);
   renderImportance();
+  generateExplanation();
 }
 
 function renderConfusionMatrix(){
@@ -1295,13 +1420,101 @@ document.getElementById('btn-run-forecast').addEventListener('click', ()=>{
   const forecastRaw = forecastNorm.map(v=> v*(max-min)+min);
   state.lastForecast = forecastRaw;
   renderForecastChart(forecastRaw);
+  generateExplanation();
 });
 
-/* ---- feature importance (first-layer weight magnitude proxy) ---- */
+/* ---- plain-language explainer ---- */
+
+function r2Descriptor(r2){
+  if (r2 >= 0.9) return {label:'excellent', text:'the model captures almost all of the pattern in your data'};
+  if (r2 >= 0.7) return {label:'strong', text:'the model has a solid handle on what drives changes in this number'};
+  if (r2 >= 0.5) return {label:'moderate', text:'the model has found a real pattern, but a fair amount of the variation is still unexplained'};
+  if (r2 >= 0.2) return {label:'weak', text:"the model's connection to the target is loose — treat its predictions as rough estimates, not firm numbers"};
+  return {label:'very weak', text:"the model isn't finding a meaningful pattern with the columns you gave it — more data, different features, or a different target might help"};
+}
+
+function confidenceDescriptor(frac){
+  if (frac >= 0.85) return 'high confidence';
+  if (frac >= 0.6) return 'moderate confidence';
+  return "low confidence — the model isn't very sure here, so treat it as a guess";
+}
+
+function findMostConfusedPair(cm, cats){
+  let best = null, bestCount = 0;
+  cats.forEach(a=> cats.forEach(b=>{
+    if (a===b) return;
+    if (cm[a][b] > bestCount){ bestCount = cm[a][b]; best = [a,b]; }
+  }));
+  return best ? {from:best[0], to:best[1], count:bestCount} : null;
+}
+
+function topFeatureSentence(){
+  if (!state.featureImportance || state.featureImportance.length === 0) return '';
+  const top = state.featureImportance.slice(0, Math.min(2, state.featureImportance.length));
+  const names = top.map(f=>`"${f.name}"`).join(' and ');
+  return ` To make its predictions, the model leaned most heavily on ${names}.`;
+}
+
+function generateExplanation(){
+  const el = document.getElementById('plain-explainer');
+  if (!el) return;
+  let html = '';
+
+  if (state.taskType === 'classification'){
+    const m = state.metrics;
+    const {topFrac} = getMajorityClass();
+    const baselinePct = (topFrac*100).toFixed(0);
+    const accPct = (m.accuracy*100).toFixed(0);
+    let compareLine;
+    if (m.accuracy > topFrac + 0.05){
+      compareLine = `That's meaningfully better than just always guessing the most common category (which would get it right about ${baselinePct}% of the time) — so it has genuinely learned something from the data.`;
+    } else if (m.accuracy > topFrac - 0.03){
+      compareLine = `That's about the same as always guessing the most common category (${baselinePct}%) — so treat this model with caution; it may not be picking up a real pattern yet.`;
+    } else {
+      compareLine = `That's actually worse than simply guessing the most common category every time (${baselinePct}%) — something is likely off with the features chosen or the amount of data available.`;
+    }
+    let confusionLine = '';
+    const pair = findMostConfusedPair(m.cm, m.cats);
+    if (pair){
+      confusionLine = ` Its most common mistake is predicting "${pair.to}" when the real answer was "${pair.from}" (${pair.count} time${pair.count===1?'':'s'} in the test data).`;
+    }
+    html = `<p>Out of every 100 predictions on data it hadn't seen before, this model gets about <b>${accPct} right</b>. ${compareLine}${confusionLine}${topFeatureSentence()}</p>`;
+
+  } else if (state.taskType === 'regression'){
+    const m = state.metrics;
+    const desc = r2Descriptor(m.r2);
+    const targetVals = state.testSet.actualRaw;
+    const avgTarget = mean(targetVals);
+    const pctOfAvg = avgTarget !== 0 ? Math.abs(m.rmse/avgTarget*100).toFixed(0) : null;
+    const rmseLine = pctOfAvg !== null
+      ? `On a typical unseen row, predictions for "${state.target}" are off by about <b>${m.rmse.toFixed(2)}</b> — roughly ${pctOfAvg}% of a typical value.`
+      : `On a typical unseen row, predictions for "${state.target}" are off by about <b>${m.rmse.toFixed(2)}</b>.`;
+    html = `<p>This model's fit is <b>${desc.label}</b> — ${desc.text}. ${rmseLine}${topFeatureSentence()}</p>`;
+
+  } else if (state.taskType === 'timeseries'){
+    const m = state.metrics;
+    const desc = r2Descriptor(m.r2);
+    let trendLine = '';
+    if (state.lastForecast && state.lastForecast.length > 1){
+      const f = state.lastForecast;
+      const delta = f[f.length-1] - f[0];
+      const pct = f[0] !== 0 ? (delta/Math.abs(f[0])*100) : 0;
+      if (Math.abs(pct) < 3) trendLine = ` Looking ahead, the forecast expects "${state.target}" to stay roughly flat.`;
+      else if (pct > 0) trendLine = ` Looking ahead, the forecast expects "${state.target}" to trend upward by roughly ${pct.toFixed(0)}% over the forecast window.`;
+      else trendLine = ` Looking ahead, the forecast expects "${state.target}" to trend downward by roughly ${Math.abs(pct).toFixed(0)}% over the forecast window.`;
+    }
+    html = `<p>This forecasting model's fit on past data is <b>${desc.label}</b> — ${desc.text}, based on the last ${state.lagCount} values each time. Typical predictions are off by about <b>${m.rmse.toFixed(2)}</b>.${trendLine}</p>`;
+  }
+
+  el.innerHTML = html;
+}
+
+/* ---- feature importance ---- */
 
 function renderImportance(){
+  if(!state.model) return;
   const layer0 = state.model.layers[0];
-  const weights = layer0.getWeights()[0]; // shape [nFeatures, units]
+  const weights = layer0.getWeights()[0];
   const data = weights.arraySync();
   const importance = data.map(row => row.reduce((s,v)=>s+Math.abs(v),0));
   const total = importance.reduce((a,b)=>a+b,0) || 1;
@@ -1349,27 +1562,29 @@ document.getElementById('btn-predict').addEventListener('click', ()=>{
   const t = tf.tensor2d([input]);
   const predT = state.model.predict(t);
   const out = predT.dataSync();
-  let display, confidence;
+  let display, note;
   if (state.taskType === 'classification'){
     const cats = state.targetEncoder.categories;
     const idx = out.indexOf(Math.max(...out));
-    confidence = out[idx];
     display = `${cats[idx]}  <span style="font-size:14px;color:var(--text-dim);">(${(out[idx]*100).toFixed(1)}% confidence)</span>`;
+    note = `That's ${confidenceDescriptor(out[idx])} — this model is right about ${(state.metrics.accuracy*100).toFixed(0)}% of the time overall, so weigh this prediction against that baseline.`;
   } else {
     const {min,max} = state.targetEncoder;
     display = (out[0]*(max-min)+min).toFixed(3);
+    const desc = r2Descriptor(state.metrics.r2);
+    note = `Typical predictions from this model are off by about ${state.metrics.rmse.toFixed(2)} (fit quality: ${desc.label}) — treat this as an estimate, not an exact figure.`;
   }
   document.getElementById('readout').classList.remove('hidden');
   document.getElementById('readout-val').innerHTML = display;
+  document.getElementById('readout-note').textContent = note;
   state.lastPrediction = {
     display: display.replace(/<[^>]+>/g,'').trim(),
-    confidence,
-    inputs: state.featureCols.map((h,i)=>({name:h, value: document.getElementById('pred-'+h).value}))
+    inputs: state.featureCols.map((h)=>({name:h, value: document.getElementById('pred-'+h).value}))
   };
   t.dispose(); predT.dispose();
 });
 
-/* ---- downloads: PDF report & chart images ---- */
+/* ---- downloads: PDF report & JPG chart images ---- */
 
 function triggerDownload(dataUrl, filename){
   const a = document.createElement('a');
@@ -1380,20 +1595,41 @@ function triggerDownload(dataUrl, filename){
   document.body.removeChild(a);
 }
 
+// Chart.js canvases are transparent by default; exporting straight to JPEG
+// (which has no alpha channel) would turn that transparency black. This
+// draws the chart onto an offscreen canvas with a solid background first.
+function chartToJPEG(chart, bgColor){
+  const src = chart.canvas;
+  const tmp = document.createElement('canvas');
+  tmp.width = src.width;
+  tmp.height = src.height;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(src, 0, 0);
+  return tmp.toDataURL('image/jpeg', 0.92);
+}
+
 document.getElementById('btn-download-charts').addEventListener('click', ()=>{
   const stamp = new Date().toISOString().slice(0,10);
+  const bg = '#242931'; // matches --surface-2, the chart-box background
+  const label = state.target || 'chart';
   if (state.resultChart){
-    triggerDownload(state.resultChart.toBase64Image(), `ballistic-ai-${state.target}-chart-${stamp}.png`);
+    triggerDownload(chartToJPEG(state.resultChart, bg), `ballistic-ai-${label}-result-${stamp}.jpg`);
   }
   if (state.importanceChart){
-    // Slight delay so browsers don't drop the second simultaneous download.
+    // Slight delay so the browser doesn't drop the second simultaneous download.
     setTimeout(()=>{
-      triggerDownload(state.importanceChart.toBase64Image(), `ballistic-ai-${state.target}-importance-${stamp}.png`);
+      triggerDownload(chartToJPEG(state.importanceChart, bg), `ballistic-ai-${label}-importance-${stamp}.jpg`);
     }, 300);
   }
 });
 
 document.getElementById('btn-download-report').addEventListener('click', ()=>{
+  if (!state.model){
+    alert('Train a model first — there\'s nothing to report on yet.');
+    return;
+  }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:'mm', format:'a4'});
   const marginX = 16;
@@ -1410,16 +1646,13 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(30,30,30);
     doc.text(text, marginX, y);
     y += 7;
-    doc.setDrawColor(200,140,90); doc.setLineWidth(0.3);
+    doc.setDrawColor(192,133,82); doc.setLineWidth(0.3);
     doc.line(marginX, y-4.5, marginX+maxWidth, y-4.5);
   }
-  function body(text, opts){
-    const size = (opts && opts.size) || 10.5;
-    doc.setFont('helvetica', (opts && opts.bold) ? 'bold' : 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(60,60,60);
+  function body(text){
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(60,60,60);
     const lines = doc.splitTextToSize(text, maxWidth);
-    lines.forEach(line=>{ ensureSpace(size*0.6); doc.text(line, marginX, y); y += size*0.55; });
+    lines.forEach(line=>{ ensureSpace(6); doc.text(line, marginX, y); y += 5.5; });
   }
   function labelValue(label, value){
     ensureSpace(6);
@@ -1430,22 +1663,7 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
     y += 6;
   }
 
-  // Plain-language descriptors — no stats jargon, meant for a reader who
-  // has never seen R² or a confusion matrix.
-  function plainFit(r2){
-    if (r2 >= 0.9) return 'very reliable, its predictions closely match reality';
-    if (r2 >= 0.7) return 'fairly reliable, it captures the main pattern in the data';
-    if (r2 >= 0.5) return 'somewhat reliable, it has found a real pattern, but there is still a lot it cannot explain';
-    if (r2 >= 0.2) return 'not very reliable, treat its predictions as rough guesses, not firm numbers';
-    return "not reliable, it hasn't found a meaningful pattern in this data yet";
-  }
-  function plainConfidence(frac){
-    if (frac >= 0.85) return 'The model is very confident about this answer.';
-    if (frac >= 0.6) return 'The model is somewhat confident about this answer.';
-    return "The model isn't very sure here, treat this as a rough guess.";
-  }
-
-  // ===== Title =====
+  // Title
   doc.setFont('helvetica','bold'); doc.setFontSize(19); doc.setTextColor(20,20,20);
   doc.text('BALLISTIC AI — Prediction Report', marginX, y);
   y += 6;
@@ -1453,61 +1671,23 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
   doc.text(`Generated ${new Date().toLocaleString()}`, marginX, y);
   y += 12;
 
-  // ===== Plain-English summary (the main thing most readers want) =====
-  heading('Summary');
-
-  if (state.taskType === 'classification'){
-    const {topFrac} = getMajorityClass();
-    body(`This model looks at your data and predicts a category for "${state.target}". Out of 100 new examples it hasn't seen before, it gets about ${(state.metrics.accuracy*100).toFixed(0)} right.`);
-    if (state.metrics.accuracy > topFrac + 0.05){
-      body('That is meaningfully better than just guessing the most common category every time, so the model has genuinely learned something useful from the data.');
-    } else {
-      body('That is close to what you would get by just guessing the most common category every time, so treat this model with some caution.');
-    }
-  } else if (state.taskType === 'regression'){
-    body(`This model predicts a number for "${state.target}" based on the other columns in your data. Overall, it is ${plainFit(state.metrics.r2)}.`);
-    body(`On a typical new row, its prediction is off by about ${state.metrics.rmse.toFixed(2)}.`);
-  } else {
-    body(`This model looks at how "${state.target}" has changed over time and predicts what comes next. Overall, it is ${plainFit(state.metrics.r2)}.`);
-    body(`On a typical step, its prediction is off by about ${state.metrics.rmse.toFixed(2)}.`);
-    if (state.lastForecast && state.lastForecast.length > 1){
-      const f = state.lastForecast;
-      const delta = f[f.length-1] - f[0];
-      const pct = f[0] !== 0 ? (delta/Math.abs(f[0])*100) : 0;
-      if (Math.abs(pct) < 3) body(`Looking ahead, it expects "${state.target}" to stay roughly flat.`);
-      else if (pct > 0) body(`Looking ahead, it expects "${state.target}" to trend upward by roughly ${pct.toFixed(0)}% over the forecast window.`);
-      else body(`Looking ahead, it expects "${state.target}" to trend downward by roughly ${Math.abs(pct).toFixed(0)}% over the forecast window.`);
-    }
+  // Plain-English summary — reuse the same text already shown in the
+  // "In plain terms" panel so the report and the app never say different things.
+  const explainerEl = document.getElementById('plain-explainer');
+  if (explainerEl && explainerEl.innerText.trim()){
+    heading('Summary');
+    body(explainerEl.innerText.trim());
+    y += 4;
   }
 
-  // Feature importance, in plain terms
-  if (state.featureCols && state.featureCols.length){
-    const layer0 = state.model.layers[0];
-    const weights = layer0.getWeights()[0].arraySync();
-    const importance = weights.map(row => row.reduce((s,v)=>s+Math.abs(v),0));
-    const total = importance.reduce((a,b)=>a+b,0) || 1;
-    const ranked = state.featureCols.map((h,i)=>({name:h, pct: importance[i]/total*100}))
-      .sort((a,b)=>b.pct-a.pct);
-    const top = ranked.slice(0, Math.min(2, ranked.length)).map(f=>`"${f.name}"`).join(' and ');
-    body(`The columns that mattered most to the model were ${top}.`);
-  }
-
-  // Live prediction, in plain terms — the headline result if one exists
+  // Last live prediction, if one was made
   if (state.lastPrediction){
-    y += 2;
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(180,110,60);
-    ensureSpace(8);
-    doc.text('Your prediction:', marginX, y);
-    y += 6.5;
-    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(60,60,60);
-    body(`Based on the values you entered (${state.lastPrediction.inputs.map(i=>`${i.name} = ${i.value}`).join(', ')}), Ballistic AI predicts: ${state.lastPrediction.display}.`);
-    if (state.taskType === 'classification' && state.lastPrediction.confidence !== undefined){
-      body(plainConfidence(state.lastPrediction.confidence));
-    }
+    heading('Your Prediction');
+    body(`Based on the values entered (${state.lastPrediction.inputs.map(i=>`${i.name} = ${i.value}`).join(', ')}), Ballistic AI predicted: ${state.lastPrediction.display}.`);
+    y += 4;
   }
-  y += 6;
 
-  // ===== Technical detail (for anyone who wants to dig deeper) =====
+  // Technical detail
   heading('Dataset & Task Details');
   labelValue('Target column', state.target);
   labelValue('Task type', state.taskType);
@@ -1533,44 +1713,36 @@ document.getElementById('btn-download-report').addEventListener('click', ()=>{
   }
   y += 4;
 
-  if (state.featureCols && state.featureCols.length){
+  if (state.featureImportance && state.featureImportance.length){
     heading('Feature Importance (relative weight)');
-    const layer0 = state.model.layers[0];
-    const weights = layer0.getWeights()[0].arraySync();
-    const importance = weights.map(row => row.reduce((s,v)=>s+Math.abs(v),0));
-    const total = importance.reduce((a,b)=>a+b,0) || 1;
-    const ranked = state.featureCols.map((h,i)=>({name:h, pct: importance[i]/total*100}))
-      .sort((a,b)=>b.pct-a.pct);
-    ranked.forEach(f=> body(`${f.name}: ${f.pct.toFixed(1)}%`));
+    state.featureImportance.forEach(f=> body(`${f.name}: ${(f.value*100).toFixed(1)}%`));
     y += 4;
   }
 
-  // Charts as images
+  // Charts as images (JPEG, same background-fill approach as the JPG download)
+  const bg = '#242931';
   if (state.resultChart){
     ensureSpace(90);
     heading('Result Chart');
-    const img = state.resultChart.toBase64Image();
+    const img = chartToJPEG(state.resultChart, bg);
     const w = maxWidth, h = w*0.55;
     ensureSpace(h+4);
-    doc.addImage(img, 'PNG', marginX, y, w, h);
+    doc.addImage(img, 'JPEG', marginX, y, w, h);
     y += h + 8;
   }
   if (state.importanceChart){
     ensureSpace(80);
     heading('Feature Importance Chart');
-    const img = state.importanceChart.toBase64Image();
+    const img = chartToJPEG(state.importanceChart, bg);
     const w = maxWidth, h = w*0.5;
     ensureSpace(h+4);
-    doc.addImage(img, 'PNG', marginX, y, w, h);
+    doc.addImage(img, 'JPEG', marginX, y, w, h);
     y += h + 8;
   }
 
-  // Footer with a real clickable link back to the tool that generated this.
-  ensureSpace(16);
+  ensureSpace(14);
   doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(140,140,140);
-  doc.text('Built with Ballistic AI, a no-code prototyping tool. Validate anything high-stakes with a proper statistical review.', marginX, pageHeight-16);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(180,110,60);
-  doc.textWithLink('Generated at: ' + SOURCE_URL, marginX, pageHeight-11, {url: SOURCE_URL});
+  doc.text('Built with Ballistic AI — a no-code prototyping tool. Validate anything high-stakes with a proper statistical review.', marginX, pageHeight-12);
 
   const stamp = new Date().toISOString().slice(0,10);
   doc.save(`ballistic-ai-report-${state.target}-${stamp}.pdf`);
